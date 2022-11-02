@@ -1,3 +1,4 @@
+import statistics as pystats
 import numpy as np
 import scipy.stats as stats 
 import scipy.signal as sig
@@ -100,10 +101,12 @@ measureTime = True
 calcShap = True
 loadModel = False
 calcEval = True
-doWeights = True
+doWeights = False
 doErrorAnalysis = True
 doBPAnalysis = True
 doComparison = True
+cutSubjectsTooShort = True
+language = 'German' # other possibilities: 'English'
 
 doSubjectwiseMAE = True
 doDatasetMAE = True
@@ -116,41 +119,57 @@ doDependencePlots = True
 doDependenceInteractions = False
 dependencePlotFeatures= ['skew','SD','b/a','T2','T1','PulseWidth']
 
-mixSet = 'CPTFULL_QueenslandFULL_PPG_BPSUBSET_SBP'
-
 ### setup weights
 wMultiplyer = 0.375#4#0.51 for NEWEST#4
 thresholdMultiplyer = 0.5#0.75#0.35 for NEWEST#0.75
 
-### use PPGI data
-#ppgi = ['with','without']
-ppgi = ['without']
-
 ### define relevant dataset dir (dependent on user)
 username = getpass.getuser()
 if(username=='Vincent Fleischhauer'): # desktop path
-    datasetBaseDir = path.abspath("X:\FleischhauerVincent\sciebo_appendix\Forschung\Konferenzen\Paper_PPG_BP\Data\Datasets")
+    datasetBaseDir = path.abspath("X:\FleischhauerVincent\sciebo_appendix\Forschung\Konferenzen")
 elif(username=='vince'): # laptop path
-    datasetBaseDir = path.abspath("Y:\FleischhauerVincent\sciebo_appendix\Forschung\Konferenzen\Paper_PPG_BP\Data\Datasets")
+    datasetBaseDir = path.abspath("Y:\FleischhauerVincent\sciebo_appendix\Forschung\Konferenzen")
+elif(username=='vifle001'): # new desktop path
+    datasetBaseDir = path.abspath("Z:\FleischhauerVincent\sciebo_appendix\Forschung\Konferenzen")
 else: # print error message and abort function
     print('User not known, analysis stopped.')
     quit()
-datasetBaseDir = path.join(datasetBaseDir,mixSet)
-
-### define split of data
-#dataSplit = ['interSubject','intraSubject']
-dataSplit = ['interSubject']
-
-### define relevant models
+    
+    
+############################################    
+# define test and train set dir here, no automatition    
+#trainSet = path.join(datasetBaseDir,'Paper_PPG_BP\Data\Datasets\CPTFULL_QueenslandFULL_PPG_BPSUBSET_SBP\interSubject\withoutPPGI') # give real path
+trainSet = path.join(datasetBaseDir,'Paper_DFG\Results\datasets\SAVE6\modelsFULL_SAVE6\GammaGaussian2generic') # give real path
+testSet = path.join(datasetBaseDir,'Paper_DFG\Results\datasets\SAVE6\modelsFULL_SAVE6\GammaGaussian2generic')
+dataSplit = ['none']
 models = ['GammaGaussian2generic']
-#models = ['GammaGaussian2generic','Gamma3generic','Gaussian2generic','Gaussian3generic']
+ppgi = ['without']
+############################################ 
+
 
 ### define predictors to be used
-desiredPredictors = ['P1','P2','T1','T2','W1','W2','b/a','SD','kurt','skew','freq1','freq2','freq3','freq4','PulseWidth'] 
-#desiredPredictors = ['P1','P2','T1','T2','W1','W2','SD','kurt','skew','freq1','freq2','freq3','freq4','PulseWidth'] 
+desiredPredictors = ['P1','P2','T1','T2','W1','W2','b/a','SD','kurt','skew','freq1','freq2','freq3','freq4','PulseWidth','PulseHeight','HR'] 
+#desiredPredictors = ['T1','T2','W1','W2','SD','kurt','skew','freq1','freq2','freq3','freq4','PulseWidth','PulseHeight','HR'] 
+desiredTargetList = ['DBP']
 
-### define predictors to be used
-desiredTargetList = ['SBP']
+if language == 'English':
+    if desiredTargetList[0] == 'SBP':
+        ylabel = 'Systolic Blood Pressure'
+    elif desiredTargetList[0] == 'DBP':
+        ylabel = 'Diastolic Blood Pressure'
+    elif desiredTargetList[0] == 'MBP':
+        ylabel = 'Mean Blood Pressure'        
+    elif desiredTargetList[0] == 'PP':
+        ylabel = 'Pulse Pressure' 
+elif language == 'German':
+    if desiredTargetList[0] == 'SBP':
+        ylabel = 'Systolischer Blutdruck'
+    elif desiredTargetList[0] == 'DBP':
+        ylabel = 'Diastolischer Bludruck'
+    elif desiredTargetList[0] == 'MBP':
+        ylabel = 'Mittlerer Blutdruck'        
+    elif desiredTargetList[0] == 'PP':
+        ylabel = 'Pulsdruck'
 
 ### define list if evaluation dicts
 evalList = list()
@@ -159,24 +178,37 @@ evalList_Queensland = list()
 evalList_PPGBP = list()
 
 
+############################################ 
+# dataset verweise beachten
+############################################ 
 
 for _,currentDataSplit in enumerate(dataSplit):
     print(currentDataSplit)
-    dataset = path.join(datasetBaseDir,currentDataSplit)
     for _,currentModel in enumerate(models):
         print(currentModel)
         for _,currentPPGIhandling in enumerate(ppgi): 
             print(currentPPGIhandling+'PPGI')
-            if (currentPPGIhandling=='with'):
-                filePath = path.join(dataset,"withPPGI",currentModel)
-                # import matlab data (csv files)
-                train = pd.read_csv(path.join(dataset,"withPPGI","trainTable.csv"), sep = ',')
-                test = pd.read_csv(path.join(dataset,"withPPGI","testTable.csv"), sep = ',')
-            elif(currentPPGIhandling=='without'):
-                filePath = path.join(dataset,"withoutPPGI",currentModel)
-                # import matlab data (csv files)
-                train = pd.read_csv(path.join(dataset,"withoutPPGI","trainTable.csv"), sep = ',')
-                test = pd.read_csv(path.join(dataset,"withoutPPGI","testTable.csv"), sep = ',')
+
+            # import matlab data (csv files)
+            train = pd.read_csv(path.join(trainSet,"trainTable.csv"), sep = ',') 
+            test = pd.read_csv(path.join(testSet,"testTable.csv"), sep = ',')
+            
+            # delete subjects from test array that contain too few samples
+            testSubsUnique = test["ID"].unique()
+            testSubsUniqueSampleCount = list()
+            for _,currentSub in enumerate(testSubsUnique):
+                testSubsUniqueSampleCount.append(len(np.where(np.array(test["ID"])==currentSub)[0]))
+            medianSampleCount = pystats.median(testSubsUniqueSampleCount)
+            outlierSubs = [testSubsUnique[i] for i,currentSampleCount in enumerate(testSubsUniqueSampleCount) if currentSampleCount < 0.5*medianSampleCount]
+            for idx,_ in enumerate(outlierSubs):
+                test = test[test.ID != outlierSubs[idx]]
+            
+            
+            filePath = path.join(datasetBaseDir,"Paper_DFG\Results\datasets\SAVE6")
+            filePath = path.join(filePath,desiredTargetList[0])
+            if not path.exists(filePath):
+                os.mkdir(filePath)
+
             if measureTime:
                 now = datetime.now()
                 currentTime = now.strftime("%H:%M:%S")
@@ -194,12 +226,16 @@ for _,currentDataSplit in enumerate(dataSplit):
             ###################################################################
             # only do that for MBP or DBP
             # restrict target variables to SBP, DBP and MBP
-            if (desiredTargetList[0] == 'DBP' or desiredTargetList[0] == 'MBP'):
+            if (desiredTargetList[0] == 'DBP' or desiredTargetList[0] == 'MBP' or desiredTargetList[0] == 'PP'):
                 # delete all nans from DBP
                 test = test[test['DBP'].notna()]
                 train = train[train['DBP'].notna()]
                 
-                # make index continupus again
+                # delete all nans from PP
+                test = test[test['PP'].notna()]
+                train = train[train['PP'].notna()]
+                
+                # make index continuous again
                 test = test.reset_index(drop=True)
                 train = train.reset_index(drop=True)
                 
@@ -278,7 +314,7 @@ for _,currentDataSplit in enumerate(dataSplit):
             # predict on test data
             prediction = regrModel.predict(testPredictors)
             blandAltman(prediction,testTarget,savePath=path.join(filePath,"blandAltman.pdf"),figureFormat='pdf')
-            plotComparison(prediction,testTarget,path.join(filePath,"groundTruth_prediction.pdf"))
+            corrSubs = plotComparison(prediction,testTarget,ylabel,path.join(filePath,"groundTruth_prediction.pdf"),subjects=test["ID"],showCorr=False,language=language)
             
             
 
@@ -294,6 +330,8 @@ for _,currentDataSplit in enumerate(dataSplit):
                     ks = 11
                 elif('case' in currentID):
                     ks = 11
+                elif('subject' in currentID):
+                    ks = 11
                 else:
                     ks = 1
                 trainTarget_smB[indicesID] = sig.medfilt(trainTarget_smB[indicesID],kernel_size=ks)
@@ -307,6 +345,8 @@ for _,currentDataSplit in enumerate(dataSplit):
                 if('unisens' in currentID):
                     ks = 11
                 elif('case' in currentID):
+                    ks = 11
+                elif('subject' in currentID):
                     ks = 11
                 else:
                     ks = 1
@@ -338,6 +378,9 @@ for _,currentDataSplit in enumerate(dataSplit):
                 elif('case' in currentID):
                     ks = 11
                     datasetString = "Queensland"
+                elif('subject' in currentID):
+                    ks = 11
+                    datasetString = "DFG"
                 else:
                     ks = 1
                     datasetString = "PPGBP"  
@@ -355,16 +398,15 @@ for _,currentDataSplit in enumerate(dataSplit):
             else:
                 yLim[1] = max(testTarget_smA) + 5
             test["dataset"] = datasetArray
-            datasetStrings = ["CPT","Queensland","PPGBP"]
+            datasetStrings = ["CPT","Queensland","PPGBP","DFG"]
             for datasetString in datasetStrings:
                 indicesDataset = test.index[test["dataset"]==datasetString]
                 subList_prediction.append(prediction_smA[indicesDataset])
                 subList_target.append(testTarget_smA[indicesDataset])
-                plotComparison(prediction_smA[indicesDataset],testTarget_smA[indicesDataset],path.join(filePath,"groundTruth_predictionSmooth" + datasetString + ".pdf"),yLimits = yLim)
+                #plotComparison(prediction_smA[indicesDataset],testTarget_smA[indicesDataset],ylabel,path.join(filePath,"groundTruth_predictionSmooth" + datasetString + ".pdf"),subjects=test["ID"],showCorr=True,yLimits = yLim,language=language)
             blandAltman(prediction_smA,testTarget_smA,savePath=path.join(filePath,"blandAltmanSmooth.pdf"),figureFormat='pdf')
-            plotComparison(prediction_smA,testTarget_smA,path.join(filePath,"groundTruth_predictionSmooth.pdf"))
-            plotComparisonSub(subList_prediction,subList_target,path.join(filePath,"groundTruth_predictionSmooth_subs.pdf"),yLimits = yLim)
-            
+            corrSubsSmooth = plotComparison(prediction_smA,testTarget_smA,ylabel,path.join(filePath,"groundTruth_predictionSmooth.pdf"),subjects=test["ID"],showCorr=False,language=language)
+            plotComparisonSub(subList_prediction,subList_target,ylabel,path.join(filePath,"groundTruth_predictionSmooth_subs.pdf"),subjects=test["ID"],yLimits = yLim,language=language)
             
             # TODO: change names of all those smooth stuff
             

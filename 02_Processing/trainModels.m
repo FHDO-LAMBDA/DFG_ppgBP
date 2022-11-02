@@ -36,7 +36,7 @@ function [randomState] = trainModels(baseDatasetDir,fromDir,toDir,mixDatasets,in
 %% Paths
 % add path to functions that are required (derivation, adding noise,...)
 addpath('..\NeededFunctions');
-addpath('C:\Users\vince\sciebo\Programme\MATLAB_Tools\altmany-export_fig-4703a84')
+addpath(['C:\Users\',getenv('username'),'\sciebo\Programme\MATLAB_Tools\altmany-export_fig-4703a84'])
 % add path to decomposition functions and cell with algorithm names
 addpath('..\Algorithms');
 % add path to feature functions and cell with feature names
@@ -57,7 +57,7 @@ for currentDataset = 1:size(dataset,1)
     % specify folders
     sourceFolder=[baseDatasetDir dataset{currentDataset,1} '\Features\' dataset{currentDataset,2} '\' fromDir '\'];
     if(~mixDatasets)
-        resultsFolderBase=['Datasets\' dataset{currentDataset,1} '\models' dataset{currentDataset,2} '\'];
+        resultsFolderBase=[baseDatasetDir dataset{currentDataset,1} '\models' dataset{currentDataset,2} '\'];
     end
     % load data struct
     load([sourceFolder 'tableCollection.mat']);
@@ -214,6 +214,21 @@ for actualAlgorithm = 1:size(algorithms,1)
             varType = class(currentTable.(usableVars{actualAlgorithm,1}{currentVariable}));
             usableVars{actualAlgorithm,2}(1,end+1) = {varType};
         end
+        
+
+        % split set into training and testing set
+        rng(randomState); % restore random number generator state
+        charID = char(currentTable.ID);
+        allSubjects{actualAlgorithm} = unique(currentTable.ID);
+        if(strcmp(dataset{1},'CPT'))
+            helperAll = unique(categorical(cellstr(charID(:,1:3)))); % only use first 3 as identifier (ensure strict separation for CPT)
+        else
+            helperAll = unique(categorical(cellstr(charID))); % use all chars as identifier
+        end
+        helperTrain = helperAll(randperm(numel(helperAll),round(portionTraining*numel(helperAll))));
+        trainSubjects{actualAlgorithm} = allSubjects{actualAlgorithm}(contains(string(allSubjects{actualAlgorithm}),string(helperTrain)));
+        testSubjects{actualAlgorithm} = setdiff(allSubjects{actualAlgorithm},trainSubjects{actualAlgorithm});
+
         clear currentTable
     end
 end
@@ -232,7 +247,7 @@ for actualAlgorithm = 1:size(algorithms,1)
     if(mixDatasets)
         mixedTable = mixedTables{actualAlgorithm,1};
     else
-        trainTable = tableCollection{strcmp(algorithms{actualAlgorithm},tableCollection(:,1)),2};
+        wholeTable = tableCollection{strcmp(algorithms{actualAlgorithm},tableCollection(:,1)),2};
     end
     
     % exclude measurements --> TODO: only delete if relevant information is
@@ -247,7 +262,9 @@ for actualAlgorithm = 1:size(algorithms,1)
             "kurt","skew","SD","freq1","freq2","freq3","freq4","W1","W2", ...
             "PulseWidth","b_a"]}),2),:) = [];
     else
-        trainTable(any(ismissing(trainTable),2),:) = [];
+        wholeTable(any(ismissing(wholeTable{:,["SBP","P1","P2","T1","T2", ...
+            "kurt","skew","SD","freq1","freq2","freq3","freq4","W1","W2", ...
+            "PulseWidth","b_a"]}),2),:) = [];
     end
     
     % get categrorical vars
@@ -258,7 +275,7 @@ for actualAlgorithm = 1:size(algorithms,1)
         if(mixDatasets)
             mixedTable.(categoricalVars{currentCategory}) = nominal(mixedTable.(categoricalVars{currentCategory}));
         else
-            trainTable.(categoricalVars{currentCategory}) = nominal(trainTable.(categoricalVars{currentCategory}));
+            wholeTable.(categoricalVars{currentCategory}) = nominal(wholeTable.(categoricalVars{currentCategory}));
         end
     end
     
@@ -280,6 +297,12 @@ for actualAlgorithm = 1:size(algorithms,1)
         end
         trainTable = mixedTable(idx,:);
         testTable = mixedTable(~idx,:);
+    else
+        trainSubjectArray = nominal([trainSubjects{actualAlgorithm}]);
+        testSubjectArray = nominal([testSubjects{actualAlgorithm}]);
+        [idx,~] = ismember(wholeTable.ID,trainSubjectArray,'rows');
+        trainTable = wholeTable(idx,:);
+        testTable = wholeTable(~idx,:);
     end
     
     %% create models
@@ -331,7 +354,7 @@ for actualAlgorithm = 1:size(algorithms,1)
 %         rf6 = fitrensemble(trainTable, ...
 %             'SBP ~ P1 + P2 + T1 + T2 + kurt + skew + SD + freq1 + freq2 + freq3 + freq4 + W1 + W2')
         rf1 = fitrensemble(trainTable, ...
-            'SBP ~ P1 + P2 + T1 + T2 + kurt + skew + SD + freq1 + freq2 + freq3 + freq4 + W1 + W2 + PulseWidth + b_a')
+            'DBP ~ P1 + P2 + T1 + T2 + kurt + skew + SD + freq1 + freq2 + freq3 + freq4 + W1 + W2 + PulseWidth + b_a + HR + PulseHeight')
     end
     
     % physical models
@@ -389,7 +412,8 @@ for actualAlgorithm = 1:size(algorithms,1)
         save([resultsFolderBase 'dataTables.mat'],'trainTable','testTable')
         save([resultsFolder 'modelResults.mat'],'modelResults');
     else
-        save([resultsFolder 'modelResults.mat'],'modelResults','trainTable','categoricalVars');
+        % TODO: save testtable, real traintable and wholetable
+        save([resultsFolder 'modelResults.mat'],'modelResults','trainTable','testTable','wholeTable','categoricalVars');
     end
 end
 end

@@ -34,10 +34,12 @@ if(strcmp(getenv('username'),'vince'))
     networkDrive = 'Y:';
 elseif(strcmp(getenv('username'),'Vincent Fleischhauer'))
     networkDrive = 'X:';
+elseif(strcmp(getenv('username'),'vifle001'))  
+    networkDrive = 'Z:';
 else
     errordlg('username not known')
 end
-baseFolder = [networkDrive,'\FleischhauerVincent\sciebo_appendix\Forschung\Konferenzen\Paper_PPG_BP\Data\Datasets\PPG_BP\'];
+baseFolder = [networkDrive,'\FleischhauerVincent\sciebo_appendix\Forschung\Konferenzen\Paper_DFG\Data\Datasets\PPG_BP\'];
 sourceFolder=[baseFolder,'measurements\'];
 resultsFolder = [baseFolder,'realData\SUBSET\'];
 

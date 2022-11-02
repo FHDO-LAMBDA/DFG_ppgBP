@@ -48,7 +48,7 @@ addpath('..\Features\frequency');
 % load file containing algorithms here
 load('algorithmsBPestimationTEST.mat','algorithms');
 % load file containing features here
-load('featuresExpanded.mat','features');
+load('featuresDFG.mat','features');
 % specify source, data and results folder
 if(extractFullDataset)
     if(~strcmp(dataClass,'ppg'))
@@ -181,6 +181,7 @@ for actualAlgorithm = 1:numAlg % only for convenience (debugging)
                     featureTableLong.SBP(i,1) = physiologicalMeasuresTable.SBP(actualSubject).values(actualBeat);
                     featureTableLong.DBP(i,1) = physiologicalMeasuresTable.DBP(actualSubject).values(actualBeat);
                     featureTableLong.PP(i,1) = physiologicalMeasuresTable.PP(actualSubject).values(actualBeat);
+                    featureTableLong.HR(i,1) = physiologicalMeasuresTable.HR(actualSubject).values(actualBeat);
                 end
                 % get features from PPG
                 for actualFeature = 1:size(features,1)

@@ -311,13 +311,9 @@ for actualAlgorithm = 1:size(algorithms,1)
         end
     else
         % load model and data
-        load([baseDatasetDir trainingSet{1,1} '\models' trainingSet{2,1} '\' algorithms{actualAlgorithm,1} '\modelResults.mat']);
-        load([baseDatasetDir testSet{1,1} '\beatwiseFeatures' testSet{2,1} '\tableCollection.mat']); % load feature tables
-        entry = find(ismember(algorithms{actualAlgorithm,1},tableCollection(:,1))); % get the table for the chosen algorithm
-        testTable = tableCollection{entry,2};
-        for currentCategory = 1:numel(categoricalVars)
-            testTable.(categoricalVars{currentCategory}) = nominal(testTable.(categoricalVars{currentCategory}));
-        end
+        load([baseDatasetDir trainingSet{1,1} '\models' trainingSet{2,1} '\' algorithms{actualAlgorithm,1} '\modelResults.mat'],'trainTable','modelResults');
+        load([baseDatasetDir testSet{1,1} '\models' testSet{2,1} '\' algorithms{actualAlgorithm,1} '\modelResults.mat'],'testTable'); % load feature tables % TODO: load from models folder
+
         % save data used
         evaluationResults.trainTable = trainTable;
         evaluationResults.trainingSet = trainingSet;
@@ -358,7 +354,7 @@ for actualAlgorithm = 1:size(algorithms,1)
             end
         end
         % save evaluation results
-        save(['Datasets\' trainingSet{1,1} '\models' trainingSet{2,1} '\' algorithms{actualAlgorithm,1} '\evaluationResults.mat'],'evaluationResults');
+        save([baseDatasetDir trainingSet{1,1} '\models' trainingSet{2,1} '\' algorithms{actualAlgorithm,1} '\evaluationResults.mat'],'evaluationResults');
     end
 end
 end

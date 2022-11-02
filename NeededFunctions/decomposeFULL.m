@@ -12,28 +12,39 @@ numPatients = size(patients,1);
 numAlgs = size(algorithms,1);
 
 parfor actualPatientNumber=1:numPatients
-    %for actualPatientNumber=1:numPatients
+%for actualPatientNumber=1:numPatients
     if(exist([sourceFolder,patients{actualPatientNumber},'.mat'],'file') ~= 2)
         continue
     end
     %% load signal to be decomposed
+    % TODO: change to ppgi
+    % do not use lazaro but use beatstart and stop indizes
     data = load([sourceFolder,patients{actualPatientNumber},'.mat'],...
-        'beatIndices','fingerPPG');
-    filteredPPG = data.fingerPPG.values;
-    beatIndices = data.beatIndices;
-    samplingFreq = data.fingerPPG.samplerate;
-    if(size(beatIndices,2)>size(beatIndices,1))
-        beatIndices = beatIndices';
+        'beatStartIndex','beatStopIndex','PPGI');
+
+    filteredPPG = data.PPGI.values;
+    beatStartIndices = data.beatStartIndex;
+    beatStopIndices = data.beatStopIndex;
+    samplingFreq = data.PPGI.samplerate;
+
+    if(size(beatStartIndices,2)>size(beatStartIndices,1))
+        beatStartIndices = beatStartIndices';
     end
-    if(~any(isnan(beatIndices)))
+    if(size(beatStopIndices,2)>size(beatStopIndices,1))
+        beatStopIndices = beatStopIndices';
+    end
+    
+    singleBeats = cell(size(filteredPPG));
+    for currentBeat = 1:size(filteredPPG,1)
+        % cut beats
         try
-            [singleBeats,~,importantPoints] = createSingleBeats(filteredPPG,samplingFreq,beatIndices);
+            singleBeats{currentBeat} = filteredPPG{currentBeat}(beatStartIndices(currentBeat):beatStopIndices(currentBeat));
         catch
-            singleBeats = NaN;
+            singleBeats{currentBeat} = NaN;
         end
-    else
-        singleBeats = NaN;
     end
+    
+
     for actualAlgorithm = 1:numAlgs
         %% decomposition, reconstruction and calculation of NRMSE
 
@@ -51,7 +62,7 @@ parfor actualPatientNumber=1:numPatients
         end
 
         decompositionResults = struct;
-        numBeats = size(beatIndices,1);
+        numBeats = size(filteredPPG,1);
         for beatNumber = 1:numBeats
             %             disp(actualPatientNumber);
             %             disp(actualAlgorithm);
@@ -69,7 +80,7 @@ parfor actualPatientNumber=1:numPatients
                     continue
                 else
                     decompositionResults(beatNumber).singleBeats = singleBeats{beatNumber};
-                    decompositionResults(beatNumber).importantPoints = importantPoints(beatNumber);
+                    decompositionResults(beatNumber).importantPoints = NaN;
                 end
                 % TODO: singleBeats can be smaller than number of beats
                 % insert nan for exclusions in while loop?
@@ -201,7 +212,7 @@ parfor actualPatientNumber=1:numPatients
         end
         parSave([resultsFolder,patients{actualPatientNumber},'\', ...
             [kernelTypes,num2str(numKernels),initialValueMethod],'.mat'],...
-            decompositionResults, beatIndices, filteredPPG, samplingFreq);
+            decompositionResults, beatStartIndices,beatStopIndices, filteredPPG, samplingFreq);
     end
 end
 
