@@ -111,7 +111,7 @@ language = 'German' # other possibilities: 'English'
 doSubjectwiseMAE = True
 doDatasetMAE = True
 
-doDatabankAnalysis = True
+doDatabankAnalysis = False
 doCameraAnalysis = False
 camStartInd = 13830
 camEndInd = 13879
@@ -139,8 +139,8 @@ else: # print error message and abort function
 ############################################    
 # define test and train set dir here, no automatition    
 #trainSet = path.join(datasetBaseDir,'Paper_PPG_BP\Data\Datasets\CPTFULL_QueenslandFULL_PPG_BPSUBSET_SBP\interSubject\withoutPPGI') # give real path
-trainSet = path.join(datasetBaseDir,'Paper_DFG\Results\datasets\SAVE6\modelsFULL_SAVE6\GammaGaussian2generic') # give real path
-testSet = path.join(datasetBaseDir,'Paper_DFG\Results\datasets\SAVE6\modelsFULL_SAVE6\GammaGaussian2generic')
+trainSet = path.join(datasetBaseDir,'Paper_DFG\Results\datasets\SAVE_Slope\modelsFULL\GammaGaussian2generic') # give real path
+testSet = path.join(datasetBaseDir,'Paper_DFG\Results\datasets\SAVE_Slope\modelsFULL\GammaGaussian2generic')
 dataSplit = ['none']
 models = ['GammaGaussian2generic']
 ppgi = ['without']
@@ -148,9 +148,9 @@ ppgi = ['without']
 
 
 ### define predictors to be used
-desiredPredictors = ['P1','P2','T1','T2','W1','W2','b/a','SD','kurt','skew','freq1','freq2','freq3','freq4','PulseWidth','PulseHeight','HR'] 
+desiredPredictors = ['P1','P2','T1','T2','W1','W2','b/a','SD','kurt','skew','freq1','freq2','freq3','freq4','PulseWidth','PulseHeight','HR','p'] 
 #desiredPredictors = ['T1','T2','W1','W2','SD','kurt','skew','freq1','freq2','freq3','freq4','PulseWidth','PulseHeight','HR'] 
-desiredTargetList = ['DBP']
+desiredTargetList = ['PP']
 
 if language == 'English':
     if desiredTargetList[0] == 'SBP':
@@ -204,7 +204,7 @@ for _,currentDataSplit in enumerate(dataSplit):
                 test = test[test.ID != outlierSubs[idx]]
             
             
-            filePath = path.join(datasetBaseDir,"Paper_DFG\Results\datasets\SAVE6")
+            filePath = path.join(datasetBaseDir,"Paper_DFG\Results\datasets\SAVE_Slope")
             filePath = path.join(filePath,desiredTargetList[0])
             if not path.exists(filePath):
                 os.mkdir(filePath)
@@ -1153,6 +1153,20 @@ for _,currentDataSplit in enumerate(dataSplit):
                 # summarize the effects of all the features (mean absolutes)
                 #fig = shap.plots.bar(shap_values)
                 fig = shap.plots.bar(copy.deepcopy(shap_valuesTEST))
+                plt.gcf().set_figheight(ps2)
+                plt.gcf().set_figwidth(ps1)
+                yticklabels = plt.gcf().axes[0].get_yticklabels()
+                yticklabels[9].set_text("others")
+                yticklabels[-1].set_text("others")
+                plt.gcf().axes[0].set_yticklabels(yticklabels)
+                if useLATEX:
+                    plt.xlabel('mean($|$SHAP value$|$)')
+                plt.grid(visible=False)
+                plt.savefig(path.join(filePath,"shapValuesMeanAbs_TEST.pdf"), bbox_inches = 'tight', pad_inches = 0)
+                #tikz.save(filepath+'shapValuesMeanAbs.tex')
+                plt.close()
+                
+                fig = shap.plots.bar(copy.deepcopy(shap_values))
                 plt.gcf().set_figheight(ps2)
                 plt.gcf().set_figwidth(ps1)
                 yticklabels = plt.gcf().axes[0].get_yticklabels()

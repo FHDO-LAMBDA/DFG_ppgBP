@@ -85,7 +85,7 @@ if(doFeatureExtraction)
 
     % dirs
     settings.Features.fromDir = '2022_10_05'; % ending of dir from which data should be used as input
-    settings.Features.toDir = '2022_10_05'; % ending of dir to which data will be saved
+    settings.Features.toDir = '2022_11_02'; % ending of dir to which data will be saved
 
     % execute function that stores settings
     storeSettings(baseDatasetDir,settings);
@@ -121,8 +121,8 @@ if(doTraining)
     end
 
     % dirs
-    fromDir = '2022_10_05'; % ending of dir from which data should be used as input
-    toDir = '2022_10_05'; % ending of dir to which data will be saved
+    fromDir = '2022_11_02'; % ending of dir from which data should be used as input
+    toDir = '2022_11_02'; % ending of dir to which data will be saved
 
     % execute function
     trainModels(baseDatasetDir,fromDir,toDir,mixDatasets,intraSubjectMix(currentRun), ...
@@ -153,8 +153,8 @@ if(doTesting)
     end
 
     % dirs
-    fromDir = '2022_10_05'; % ending of dir from which data should be used as input
-    toDir = '2022_10_05'; % ending of dir to which data will be saved
+    fromDir = '2022_11_02'; % ending of dir from which data should be used as input
+    toDir = '2022_11_02'; % ending of dir to which data will be saved
 
     % execute function
     testModels(baseDatasetDir,fromDir,toDir,doDummyError,doVisualization,...

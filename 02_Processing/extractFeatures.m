@@ -42,13 +42,14 @@ addpath('..\Algorithms');
 % add path to feature functions and cell with feature names
 addpath('..\Features');
 addpath('..\Features\decomposition');
+addpath('..\Features\firstDerivative');
 addpath('..\Features\secondDerivative');
 addpath('..\Features\statistical');
 addpath('..\Features\frequency');
 % load file containing algorithms here
 load('algorithmsBPestimationTEST.mat','algorithms');
 % load file containing features here
-load('featuresDFG.mat','features');
+load('featuresDFG_new.mat','features');
 % specify source, data and results folder
 if(extractFullDataset)
     if(~strcmp(dataClass,'ppg'))

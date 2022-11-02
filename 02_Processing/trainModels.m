@@ -354,7 +354,7 @@ for actualAlgorithm = 1:size(algorithms,1)
 %         rf6 = fitrensemble(trainTable, ...
 %             'SBP ~ P1 + P2 + T1 + T2 + kurt + skew + SD + freq1 + freq2 + freq3 + freq4 + W1 + W2')
         rf1 = fitrensemble(trainTable, ...
-            'DBP ~ P1 + P2 + T1 + T2 + kurt + skew + SD + freq1 + freq2 + freq3 + freq4 + W1 + W2 + PulseWidth + b_a + HR + PulseHeight')
+            'DBP ~ P1 + P2 + T1 + T2 + kurt + skew + SD + freq1 + freq2 + freq3 + freq4 + W1 + W2 + PulseWidth + b_a + HR + PulseHeight + p')
     end
     
     % physical models
